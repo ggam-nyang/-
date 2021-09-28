@@ -28,6 +28,9 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
+static struct list sleep_list;  // 슬립 리스트
+
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -62,6 +65,7 @@ static void init_thread (struct thread *, const char *name, int priority);
 static void do_schedule(int status);
 static void schedule (void);
 static tid_t allocate_tid (void);
+
 
 /* Returns true if T appears to point to a valid thread. */
 #define is_thread(t) ((t) != NULL && (t)->magic == THREAD_MAGIC)
@@ -109,6 +113,8 @@ thread_init (void) {
 	lock_init (&tid_lock);
 	list_init (&ready_list);
 	list_init (&destruction_req);
+	list_init (&sleep_list);
+
 
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
@@ -245,6 +251,50 @@ thread_unblock (struct thread *t) {
 	intr_set_level (old_level);
 }
 
+bool thread_compare_wakeTime (const struct list_elem *a,
+							const struct list_elem *b,
+							void *aux UNUSED) {
+	return list_entry (a, struct thread, elem)->wake_time
+	< list_entry (b, struct thread, elem)->wake_time;
+}
+
+
+// Thread 재우기 함수!!!!
+void thread_sleep(int64_t ticks) {
+	enum intr_level old_level;
+	old_level = intr_disable();
+
+	struct thread *curr = thread_current();
+
+	ASSERT(curr != idle_thread);
+	curr->wake_time = ticks;
+
+	list_insert_ordered(&sleep_list, &curr->elem, thread_compare_wakeTime, NULL);
+
+	thread_block();
+
+	intr_set_level(old_level);
+}
+
+void thread_awake(int64_t ticks) {
+	struct list_elem *temp = list_begin(&sleep_list);
+	struct thread *curr = list_entry(temp, struct thread, elem);
+
+
+	while (curr->wake_time <= ticks) {
+		temp = list_remove(&curr->elem);
+		thread_unblock(curr);
+
+		curr = list_entry(temp, struct thread, elem);
+	}
+}
+
+struct list_elem *get_list_begin(void) {
+	return list_begin(&sleep_list);
+}
+
+
+
 /* Returns the name of the running thread. */
 const char *
 thread_name (void) {
@@ -307,6 +357,8 @@ thread_yield (void) {
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
+
+
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
@@ -408,6 +460,7 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
+	t->wake_time = 0;
 	t->magic = THREAD_MAGIC;
 }
 

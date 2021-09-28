@@ -19,7 +19,7 @@
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
-
+ 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
@@ -28,6 +28,9 @@ static intr_handler_func timer_interrupt;
 static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
+
+/* sleep 중인 thread의 list를 만듦 */
+
 
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
@@ -87,14 +90,18 @@ timer_elapsed (int64_t then) {
 	return timer_ticks () - then;
 }
 
+
+
+
+
 /* Suspends execution for approximately TICKS timer ticks. */
 void
 timer_sleep (int64_t ticks) {
 	int64_t start = timer_ticks ();
 
 	ASSERT (intr_get_level () == INTR_ON);
-	while (timer_elapsed (start) < ticks)
-		thread_yield ();
+	
+	thread_sleep(ticks + start);
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -125,6 +132,11 @@ timer_print_stats (void) {
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
+	int64_t now_ticks = timer_ticks ();
+	struct list_elem *start_elem = get_list_begin();
+	struct thread *start = list_entry(start_elem, struct thread, elem);
+	if (start->wake_time <= now_ticks)
+		thread_awake (now_ticks);
 	thread_tick ();
 }
 

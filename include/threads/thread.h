@@ -91,7 +91,8 @@ struct thread {
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
-
+	// 내가 추가한 member
+	int64_t wake_time; 					/* Sleep이 끝나는 시간을 기록 */
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
@@ -125,6 +126,12 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
+
+void thread_sleep(int64_t);
+void thread_awake(int64_t); 
+bool thread_compare_wakeTime (const struct list_elem *, const struct list_elem *, void *); // wakeTime을 비교하여 sleep_list에 insert를 위한 함수
+struct list_elem *get_list_begin(void);
+
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);
