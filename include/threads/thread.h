@@ -91,8 +91,9 @@ struct thread {
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
-	// 내가 추가한 member
-	int64_t wake_time; 					/* Sleep이 끝나는 시간을 기록 */
+	// awake time add member
+	int64_t awake_time;
+  
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
@@ -117,6 +118,16 @@ extern bool thread_mlfqs;
 
 void thread_init (void);
 void thread_start (void);
+
+void thread_sleep(int64_t ticks);
+void thread_awake(int64_t ticks);
+bool thread_compare_awake(const struct list_elem *a,
+						  const struct list_elem *b,
+						  void *aux UNUSED);
+
+int64_t get_next_tick_to_awake(void);
+void update_next_tick_to_awake(int64_t ticks);
+int64_t first_next_tick_to_awake(void);
 
 void thread_tick (void);
 void thread_print_stats (void);
