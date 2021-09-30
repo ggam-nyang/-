@@ -118,14 +118,14 @@ extern bool thread_mlfqs;
 void thread_init (void);
 void thread_start (void);
 
-void thread_sleep(int64_t ticks);
-void thread_awake(int64_t ticks);
-bool thread_compare_awake(const struct list_elem *a,
-						  const struct list_elem *b,
-						  void *aux UNUSED);
+void thread_sleep(int64_t);
+void thread_awake(int64_t);
+bool thread_compare_awake(const struct list_elem *,
+						  const struct list_elem *,
+						  void *);
 
 int64_t get_next_tick_to_awake(void);
-void update_next_tick_to_awake(int64_t ticks);
+void update_next_tick_to_awake(int64_t);
 int64_t first_next_tick_to_awake(void);
 
 void thread_tick (void);
@@ -153,5 +153,11 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 void do_iret (struct intr_frame *tf);
+
+
+bool thread_compare_priority(const struct list_elem *,
+						  const struct list_elem *,
+						  void *);
+void thread_test_preemption (void);
 
 #endif /* threads/thread.h */
