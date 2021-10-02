@@ -175,6 +175,7 @@ lock_init (struct lock *lock) {
 	ASSERT (lock != NULL);
 
 	lock->holder = NULL;
+	lock->origin_priority = NULL;
 	sema_init (&lock->semaphore, 1);
 }
 
@@ -192,8 +193,16 @@ lock_acquire (struct lock *lock) {
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
+	struct thread *curr = thread_current ();
+	if (lock->holder) {
+		donate_priority (lock);
+	}
+
 	sema_down (&lock->semaphore);
-	lock->holder = thread_current ();
+
+	lock->holder = curr;
+	lock->origin_priority = lock->holder->priority;
+	list_insert_ordered(&curr->lock_list, &lock->lock_elem, lock_compare_priority, NULL);
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -225,6 +234,9 @@ void
 lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
+
+	list_remove(&lock->lock_elem);
+	refresh_priority(lock);
 
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);

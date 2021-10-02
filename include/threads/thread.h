@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -96,6 +97,8 @@ struct thread {
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
+	struct list lock_list; // List of acquired locks    //JY
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -159,5 +162,12 @@ bool thread_compare_priority(const struct list_elem *,
 						  const struct list_elem *,
 						  void *);
 void thread_test_preemption (void);
+
+void donate_priority (struct lock *);
+void refresh_priority (struct lock *);
+bool lock_compare_priority (const struct list_elem *a,
+						  const struct list_elem *b,
+						  void *aux UNUSED);
+int lock_elem_to_max_priority (struct list_elem *);
 
 #endif /* threads/thread.h */

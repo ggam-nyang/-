@@ -304,7 +304,27 @@ thread_yield (void) {
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) {
-	thread_current ()->priority = new_priority;
+	struct thread *curr = thread_current ();
+	struct list_elem *max_lock_elem;
+	struct lock *max_lock;
+	if (!list_empty(&curr->lock_list)) {
+		max_lock_elem = list_begin(&curr->lock_list);
+		max_lock = list_entry(max_lock_elem, struct lock, lock_elem);
+		int max_priority = list_entry(list_begin(&(max_lock->semaphore).waiters), struct thread, elem)->priority;
+		if (max_priority > new_priority) {
+			
+			curr->priority = max_priority;
+			max_lock->origin_priority = new_priority;
+		}
+		else
+			curr->priority = new_priority;
+		// max_lock->origin_priority = new_priority;
+		// refresh_priority (max_lock);
+	}
+	else {
+		curr->priority = new_priority;
+	}
+	
 	thread_test_preemption();
 }
 
@@ -402,8 +422,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
+	list_init (&t->lock_list); // JY   init lock_list
 	t->magic = THREAD_MAGIC;
-	
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -679,4 +699,70 @@ thread_test_preemption (void)
     if (!list_empty (&ready_list) && 
     thread_current ()->priority < list_entry (list_front(&ready_list), struct thread, elem)->priority)
         thread_yield ();
+}
+
+void
+donate_priority (struct lock *lock)
+{
+	struct thread *curr = thread_current ();
+	bool is_waiters_empty = list_empty(&(lock->semaphore).waiters);
+
+	if (is_waiters_empty) 
+		lock->origin_priority = lock->holder->priority;
+	// else 
+		// list_entry(list_begin(lock_waiters), struct thread, elem)
+
+	lock->holder->priority = curr->priority;
+	list_sort(&ready_list, thread_compare_priority, NULL);
+
+}
+
+void
+refresh_priority (struct lock *lock)
+{
+	lock->holder->priority = lock->origin_priority;
+	struct list *locklist = &lock->holder->lock_list;
+
+	if (!list_empty(locklist)) {
+		struct lock *max_lock = list_entry(list_rbegin(locklist), struct lock, lock_elem);
+		int max_priorty = lock_elem_to_max_priority(&max_lock->lock_elem);
+		if (lock->holder->priority < max_priorty) {
+	printf("\n hihihihi \n");
+			lock->holder->priority = max_priorty;
+			// printf("\n\n %d   %d   %d\n\n", max_priorty, lock_elem_to_max_priority(&lock->lock_elem), lock->origin_priority);
+			list_entry(list_next(&lock->lock_elem), struct lock, lock_elem)->origin_priority = lock->origin_priority;
+		}
+	}
+
+
+
+	// if (!list_empty(locklist)) {
+	// 	if (list_begin(locklist) != &lock->lock_elem) {
+	// 		struct lock *max_lock = list_entry(list_begin(locklist), struct lock, lock_elem);
+
+	// 		list_entry(list_prev(&lock->lock_elem), struct lock, lock_elem)->origin_priority = lock->origin_priority;
+	// 		lock->holder->priority = list_entry(list_begin(&((max_lock->semaphore).waiters)), struct thread, elem)->priority;
+	// 	}
+	// }
+
+
+	// struct thread *donate_thread = list_begin(&(lock->semaphore).waiters);
+
+	// if (donate_thread->priority > lock->holder->priority)
+	// 	lock->holder->priority = donate_thread->priority;
+}
+
+bool lock_compare_priority (const struct list_elem *a,
+						  const struct list_elem *b,
+						  void *aux UNUSED)
+{
+	return lock_elem_to_max_priority(a) > lock_elem_to_max_priority(b);
+}
+
+int lock_elem_to_max_priority (struct list_elem *lock_el)
+{
+	struct lock *now_lock = list_entry(lock_el, struct lock, lock_elem);
+	struct thread *max_thread = list_entry(list_begin(&(now_lock->semaphore).waiters), struct thread, elem);
+
+	return max_thread->priority;
 }
