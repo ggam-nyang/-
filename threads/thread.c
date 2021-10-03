@@ -208,7 +208,7 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
-	list_push_back (&all_list, &t->allelem);
+	
 
 
 	/* Add to run queue. */
@@ -444,9 +444,9 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->ori_priority = priority;
 	t->wish_lock = NULL;
 	t->nice = NICE_DEFAULT;
-    t->recent_cpu = RECENT_CPU_DEFAULT;
+  t->recent_cpu = RECENT_CPU_DEFAULT;
 	t->magic = THREAD_MAGIC;
-
+	list_push_back (&all_list, &t->allelem);
 	list_init (&t->donations);
 	
 }
