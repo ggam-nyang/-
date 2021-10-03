@@ -105,10 +105,6 @@ static uint64_t gdt[3] = { 0, 0x00af9a000000ffff, 0x00cf92000000ffff };
 void
 thread_init (void) {
 	ASSERT (intr_get_level () == INTR_OFF);
-
-	load_avg = LOAD_AVG_DEFAULT;	/* init load_avg */
-
-
 	/* Reload the temporal gdt for the kernel
 	 * This gdt does not include the user context.
 	 * The kernel will rebuild the gdt with user context, in gdt_init (). */
@@ -130,6 +126,8 @@ thread_init (void) {
 	init_thread (initial_thread, "main", PRI_DEFAULT);
 	initial_thread->status = THREAD_RUNNING;
 	initial_thread->tid = allocate_tid ();
+
+	load_avg = LOAD_AVG_DEFAULT;	/* init load_avg */
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
