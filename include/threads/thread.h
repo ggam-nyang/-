@@ -9,6 +9,10 @@
 #include "vm/vm.h"
 #endif
 
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -91,10 +95,18 @@ struct thread {
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
+	int ori_priority;                   /* Original priority */
 	int64_t awake_time;
+
+	int nice;
+    int recent_cpu;
 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
+	struct lock *wish_lock;             /* Have lock list */
+	struct list donations;              /* Donation list*/
+	struct list_elem donation_elem;     /* Donation element list*/
+	struct list_elem allelem;           /* List element for all threads list. */
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -153,5 +165,14 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 void do_iret (struct intr_frame *tf);
+
+bool thread_compare_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED); 
+
+bool sema_compare_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED); 
+
+bool thread_compare_donate_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED); 
+
+void thread_preemption(void); 
+void refresh_priority(void);
 
 #endif /* threads/thread.h */
