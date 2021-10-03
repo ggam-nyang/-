@@ -106,6 +106,9 @@ void
 thread_init (void) {
 	ASSERT (intr_get_level () == INTR_OFF);
 
+	load_avg = LOAD_AVG_DEFAULT;	/* init load_avg */
+
+
 	/* Reload the temporal gdt for the kernel
 	 * This gdt does not include the user context.
 	 * The kernel will rebuild the gdt with user context, in gdt_init (). */
@@ -133,12 +136,10 @@ thread_init (void) {
    Also creates the idle thread. */
 void
 thread_start (void) {
-	load_avg = LOAD_AVG_DEFAULT;	/* init load_avg */
 	/* Create the idle thread. */
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
-
 
 	/* Start preemptive thread scheduling. */
 	intr_enable ();
@@ -204,7 +205,7 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
-	list_push_back(&all_list, &t->all_elem);
+	
 
 	/* Add to run queue. */
 	thread_unblock (t);
@@ -447,6 +448,7 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 	list_init (&t->donations);
 	
+	list_push_back(&all_list, &t->all_elem);
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -812,7 +814,7 @@ void mlfqs_calculate_load_avg (void)
 	else
 		ready_threads = list_size (&ready_list) + 1;
 	
-	load_avg = add_fp (mult_fp(div_fp(int_to_fp(59), int_to_fp(60)), load_avg), mult_mixed (div_fp (int_to_fp (1), int_to_fp (60)), ready_threads));
+	load_avg = add_fp (mult_fp (div_fp (int_to_fp (59), int_to_fp (60)), load_avg), mult_mixed (div_fp (int_to_fp (1), int_to_fp (60)), ready_threads));
 }
 
 void mlfqs_increment_recent_cpu (void)
