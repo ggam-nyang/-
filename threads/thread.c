@@ -106,9 +106,6 @@ void
 thread_init (void) {
 	ASSERT (intr_get_level () == INTR_OFF);
 
-	load_avg = LOAD_AVG_DEFAULT;	/* init load_avg */
-
-
 	/* Reload the temporal gdt for the kernel
 	 * This gdt does not include the user context.
 	 * The kernel will rebuild the gdt with user context, in gdt_init (). */
@@ -136,6 +133,8 @@ thread_init (void) {
    Also creates the idle thread. */
 void
 thread_start (void) {
+	load_avg = LOAD_AVG_DEFAULT;	/* init load_avg */
+
 	/* Create the idle thread. */
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
