@@ -648,8 +648,6 @@ void thread_sleep(int64_t ticks)
 	struct thread *curr = thread_current();
 	ASSERT(!intr_context());
 	ASSERT(curr != idle_thread);
-	
-
 	/* FIFO push back sleep list */
 	//update_next_tick_to_awake(curr->awake_time = ticks);
 	//list_push_back(&sleep_list, &curr->elem);
