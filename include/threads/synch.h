@@ -52,4 +52,8 @@ struct semaphore_elem { // sharing for thread.c
 #define barrier() asm volatile ("" : : : "memory")
 
 
+
+
+bool sema_compare_priority (const struct list_elem *, const struct list_elem *, void *);
+
 #endif /* threads/synch.h */
