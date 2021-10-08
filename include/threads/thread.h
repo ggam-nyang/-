@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -107,6 +108,29 @@ struct thread {
 	struct list donations;              /* Donation list*/
 	struct list_elem donation_elem;     /* Donation element list*/
 	struct list_elem allelem;           /* List element for all threads list. */
+
+	/* Project2 */
+	struct list child_list;
+	struct list_elem child_elem;
+	// wait syscall
+	struct semaphore wait_sema;  	// child를 기다리기 위해 parent가 사용
+	int exit_status;			 	// child의 exit_stauts를 부모에게 전달하기 위해
+	// fork syscall
+	struct intr_frame parent_if; 	// 내 intr_frame을 보관하고, child에게 주기 위함
+	struct semaphore fork_sema;  	// 자식이 끝날 때까지, 부모 process가 기다려줌  (__do fork)
+	struct semaphore free_sema;  	// 자식의 termination을 연기함! 부모가 exit_status를 받을 때 까지!! (process_wait)
+	// file descripter
+	struct file **fdTable;			/* *****주석을 달아주세요****** */
+	int fdIdx;
+	// deny exec writes
+	struct file *running;
+	// extra!! count open stdin/stdout
+	// dup2 may copy stdin / stdout, 
+	int stdin_count;
+	int stdout_count;
+
+	
+
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */

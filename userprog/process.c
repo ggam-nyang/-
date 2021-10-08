@@ -26,6 +26,7 @@ static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
+struct thread *get_child_process (tid_t);
 
 /* General process initializer for initd and other process. */
 static void
@@ -201,20 +202,30 @@ process_exec (void *f_name) {
  * does nothing. */
 int
 process_wait (tid_t child_tid UNUSED) {
-	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
-	 * XXX:       to add infinite loop here before
-	 * XXX:       implementing the process_wait. */
-	return -1;
+	struct thread *curr = thread_current ();
+	struct thread *child_th = get_child_process(child_tid);
+
+	if (child_th == NULL)
+		return -1;
+
+	sema_down(&child_th->wait_sema);
+
+	int exit_status = child_th->exit_status; // why??
+
+	list_remove(&child_th->child_elem);
+
+	sema_up(&child_th->free_sema);   		 // Why??
+	return exit_status;						// return 값을 레지스터에 넣어준다 (wait syscall)
 }
 
 /* Exit the process. This function is called by thread_exit (). */
 void
 process_exit (void) {
 	struct thread *curr = thread_current ();
-	/* TODO: Your code goes here.
-	 * TODO: Implement process termination message (see
-	 * TODO: project2/process_termination.html).
-	 * TODO: We recommend you to implement process resource cleanup here. */
+	// curr->exit_status = curr->status;  // ************* 이게 불필요?? **************
+	sema_up(&curr->wait_sema);
+
+	sema_down(&curr->free_sema);
 
 	process_cleanup ();
 }
@@ -329,6 +340,20 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+	char *token, *save_ptr;
+	int argc = 0;
+	
+
+	
+	char *arg[64];
+	char **argv[64];
+	void *rsp;
+	
+	for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+		arg[argc] = token + '\0';
+		argc += 1;
+	}
+
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
@@ -336,9 +361,9 @@ load (const char *file_name, struct intr_frame *if_) {
 	process_activate (thread_current ());
 
 	/* Open executable file. */
-	file = filesys_open (file_name);
+	file = filesys_open (arg[0]);
 	if (file == NULL) {
-		printf ("load: %s: open failed\n", file_name);
+		printf ("load: %s: open failed\n", arg[0]);
 		goto done;
 	}
 
@@ -414,11 +439,40 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* Start address. */
 	if_->rip = ehdr.e_entry;
 
-	/* TODO: Your code goes here.
-	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+	rsp = if_->rsp;
+	for (int i = argc - 1; i >= 0; i--) {
+		rsp -= strlen(arg[i]) + 1;
+		memcpy (rsp, arg[i], strlen(arg[i]) + 1);
+		argv[i] = (uint64_t)rsp;
+	}
+	/* double word align */
+	while ((uint64_t)rsp % 8 != 0) {
+		rsp -= 1;
+		*(uint8_t *)rsp = 0;
+	}
+
+	rsp -= 8;
+	*(uint64_t *)rsp = 0;
+
+	for (int i = argc - 1; i >= 0; i--) {
+		rsp -= 8;
+		*(uint64_t *)rsp = argv[i];
+	}
+
+	if_->R.rdi = argc;
+	if_->R.rsi = rsp;
+
+	rsp -= 8;
+	*(uint64_t *)rsp = 0;
+
+	/* return address */
+
+	if_->rsp = rsp;
+
 
 	success = true;
 
+	hex_dump(if_->rsp, if_->rsp, USER_STACK - if_->rsp, true);
 done:
 	/* We arrive here whether the load is successful or not. */
 	file_close (file);
@@ -637,3 +691,18 @@ setup_stack (struct intr_frame *if_) {
 	return success;
 }
 #endif /* VM */
+
+struct thread *get_child_process (tid_t pid)
+{
+	struct thread *curr = thread_current ();
+	struct list_elem *child_e;
+
+	for (child_e = list_begin(&curr->child_list); list_end(&curr->child_list) != child_e; child_e = list_next(child_e))
+	{
+		struct thread *child_thread = list_entry(child_e, struct thread, child_elem);
+		if (child_thread->tid == pid)
+			return child_thread;
+	}
+
+	return NULL;
+}
