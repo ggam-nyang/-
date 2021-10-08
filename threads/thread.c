@@ -30,6 +30,8 @@
 static struct list ready_list;
 static struct list all_list;
 
+static struct list all_list; /* list of all thread */
+
 /* sleep list */
 static struct list sleep_list;
 static int64_t next_tick_to_awake;
@@ -213,9 +215,9 @@ thread_create (const char *name, int priority,
 	t->tf.eflags = FLAG_IF;
 
 
-
 	/* Add to run queue. */
 	thread_unblock (t);
+	thread_test_preemption();
 
 	thread_preemption(); 
 
@@ -445,6 +447,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->ori_priority = priority;
+	t->nice = NICE_DEFAULT;
+	t->recent_cpu = RECENT_CPU_DEFAULT;
 	t->wish_lock = NULL;
 	t->nice = NICE_DEFAULT;
     t->recent_cpu = RECENT_CPU_DEFAULT;
@@ -659,8 +663,6 @@ void thread_sleep(int64_t ticks)
 	struct thread *curr = thread_current();
 	ASSERT(!intr_context());
 	ASSERT(curr != idle_thread);
-	
-
 	/* FIFO push back sleep list */
 	//update_next_tick_to_awake(curr->awake_time = ticks);
 	//list_push_back(&sleep_list, &curr->elem);

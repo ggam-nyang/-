@@ -33,6 +33,10 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+#define NICE_DEFAULT 0					/* Default nice */
+#define RECENT_CPU_DEFAULT 0			/* Default recent_cput */
+#define LOAD_AVG_DEFAULT 0				/* Deafult load_avg */
+
 /* A kernel thread or user process.
  *
  * Each thread structure is stored in its own 4 kB page.  The
@@ -132,6 +136,9 @@ struct thread {
 	
 
 
+	int nice;							/* nice */
+	int recent_cpu;						/* recent_cpu for thread */
+	struct list_elem all_elem;			/* all_list elem */
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -154,14 +161,14 @@ extern bool thread_mlfqs;
 void thread_init (void);
 void thread_start (void);
 
-void thread_sleep(int64_t ticks);
-void thread_awake(int64_t ticks);
-bool thread_compare_awake(const struct list_elem *a,
-						  const struct list_elem *b,
-						  void *aux UNUSED);
+void thread_sleep(int64_t);
+void thread_awake(int64_t);
+bool thread_compare_awake(const struct list_elem *,
+						  const struct list_elem *,
+						  void *);
 
 int64_t get_next_tick_to_awake(void);
-void update_next_tick_to_awake(int64_t ticks);
+void update_next_tick_to_awake(int64_t);
 int64_t first_next_tick_to_awake(void);
 
 void thread_tick (void);
@@ -198,5 +205,12 @@ bool thread_compare_donate_priority (const struct list_elem *a_, const struct li
 
 void thread_preemption(void); 
 void refresh_priority(void);
+
+void mlfqs_calculate_priority (struct thread *);
+void mlfqs_calculate_recent_cpu (struct thread *);
+void mlfqs_calculate_load_avg (void);
+void mlfqs_increment_recent_cpu (void);
+void mlfqs_recalculate_recent_cpu (void);
+void mlfqs_recalculate_priority (void);
 
 #endif /* threads/thread.h */

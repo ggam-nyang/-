@@ -142,6 +142,8 @@ timer_interrupt (struct intr_frame *args UNUSED) {
 		     thread_awake(ticks);
         }
 	}
+
+	thread_awake(ticks);
 }
 
 
