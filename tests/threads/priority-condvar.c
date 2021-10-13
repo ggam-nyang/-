@@ -23,7 +23,6 @@ test_priority_condvar (void)
 
   lock_init (&lock);
   cond_init (&condition);
-
   thread_set_priority (PRI_MIN);
   for (i = 0; i < 10; i++) 
     {

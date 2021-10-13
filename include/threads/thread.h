@@ -5,9 +5,14 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
+
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
 
 
 /* States in a thread's life cycle. */
@@ -98,11 +103,38 @@ struct thread {
 	int ori_priority;                   /* Original priority */
 	int64_t awake_time;
 
+	int nice;
+    int recent_cpu;
+
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 	struct lock *wish_lock;             /* Have lock list */
 	struct list donations;              /* Donation list*/
 	struct list_elem donation_elem;     /* Donation element list*/
+	struct list_elem allelem;           /* List element for all threads list. */
+
+	/* Project2 */
+	struct list child_list;
+	struct list_elem child_elem;
+	// wait syscall
+	struct semaphore wait_sema;  	// child를 기다리기 위해 parent가 사용
+	int exit_status;			 	// child의 exit_stauts를 부모에게 전달하기 위해
+	// fork syscall
+	struct intr_frame parent_if; 	// 내 intr_frame을 보관하고, child에게 주기 위함
+	struct semaphore fork_sema;  	// 자식이 끝날 때까지, 부모 process가 기다려줌  (__do fork)
+	struct semaphore free_sema;  	// 자식의 termination을 연기함! 부모가 exit_status를 받을 때 까지!! (process_wait)
+	// file descripter
+	struct file **fdTable;			/* *****주석을 달아주세요****** */
+	int fdIdx;
+	// deny exec writes
+	struct file *running;
+	// extra!! count open stdin/stdout
+	// dup2 may copy stdin / stdout, 
+	int stdin_count;
+	int stdout_count;
+
+	
+
 
 	int nice;							/* nice */
 	int recent_cpu;						/* recent_cpu for thread */
@@ -129,14 +161,14 @@ extern bool thread_mlfqs;
 void thread_init (void);
 void thread_start (void);
 
-void thread_sleep(int64_t ticks);
-void thread_awake(int64_t ticks);
-bool thread_compare_awake(const struct list_elem *a,
-						  const struct list_elem *b,
-						  void *aux UNUSED);
+void thread_sleep(int64_t);
+void thread_awake(int64_t);
+bool thread_compare_awake(const struct list_elem *,
+						  const struct list_elem *,
+						  void *);
 
 int64_t get_next_tick_to_awake(void);
-void update_next_tick_to_awake(int64_t ticks);
+void update_next_tick_to_awake(int64_t);
 int64_t first_next_tick_to_awake(void);
 
 void thread_tick (void);
