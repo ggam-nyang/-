@@ -3,6 +3,7 @@
 
 #include "filesys/off_t.h"
 #include <stdbool.h>
+<<<<<<< HEAD
 /* An open file. */
 struct file {
 	struct inode *inode;        /* File's inode. */
@@ -11,7 +12,16 @@ struct file {
 	int dupCount;
 };
 
+=======
+>>>>>>> e429f9aa5690ff535de11968d1e981b72625965e
 
+/* An open file. */
+struct file {
+	struct inode *inode;        /* File's inode. */
+	off_t pos;                  /* Current position. */
+	bool deny_write;            /* Has file_deny_write() been called? */
+	int dupCount;
+};
 struct inode;
 
 /* Opening and closing files. */
