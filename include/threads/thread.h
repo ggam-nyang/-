@@ -103,9 +103,6 @@ struct thread {
 	int ori_priority;                   /* Original priority */
 	int64_t awake_time;
 
-	int nice;
-    int recent_cpu;
-
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 	struct lock *wish_lock;             /* Have lock list */
