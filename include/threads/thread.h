@@ -112,18 +112,23 @@ struct thread {
 	/* Project2 */
 	struct list child_list;
 	struct list_elem child_elem;
+
 	// wait syscall
 	struct semaphore wait_sema;  	// child를 기다리기 위해 parent가 사용
 	int exit_status;			 	// child의 exit_stauts를 부모에게 전달하기 위해
+
 	// fork syscall
 	struct intr_frame parent_if; 	// 내 intr_frame을 보관하고, child에게 주기 위함
 	struct semaphore fork_sema;  	// 자식이 끝날 때까지, 부모 process가 기다려줌  (__do fork)
 	struct semaphore free_sema;  	// 자식의 termination을 연기함! 부모가 exit_status를 받을 때 까지!! (process_wait)
+
 	// file descripter
-	struct file **fdTable;			/* *****주석을 달아주세요****** */
-	int fdIdx;
+	struct file **fdTable;			/* File_Descriptor_Table */
+	int fdIdx;						/* 현재 fd의 최대값 + 1  or  현재 fd의 인덱스 */
+
 	// deny exec writes
 	struct file *running;
+
 	// extra!! count open stdin/stdout
 	// dup2 may copy stdin / stdout, 
 	int stdin_count;
@@ -199,4 +204,8 @@ bool thread_compare_donate_priority (const struct list_elem *a_, const struct li
 void thread_preemption(void); 
 void refresh_priority(void);
 
-#endif /* threads/thread.h */
+/* file descriptor define */
+#define FDT_PAGES 3
+#define FDCOUNT_LIMIT FDT_PAGES *(1 << 9)
+
+#endif
