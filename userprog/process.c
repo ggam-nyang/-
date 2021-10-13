@@ -26,7 +26,7 @@ static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
-struct thread *get_child_process (tid_t);
+
 
 /* General process initializer for initd and other process. */
 static void
@@ -51,10 +51,6 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
-<<<<<<< HEAD
-=======
-	/* return 0으로 exit syscall 호출시 thread 이름 출력때문에 바꿔줘야됨 */
->>>>>>> e429f9aa5690ff535de11968d1e981b72625965e
 	char *save_ptr;
 	strtok_r(file_name, " ", &save_ptr);
 
@@ -141,11 +137,6 @@ duplicate_pte (uint64_t *pte, void *va, void *aux)
 }
 #endif
 
-struct MapElem
-{
-	uintptr_t key;
-	uintptr_t value;
-};
 
 /* A thread function that copies parent's execution context.
  * Hint) parent->tf does not hold the userland context of the process.
@@ -302,9 +293,8 @@ process_exec (void *f_name) {
  * does nothing. */
 int
 process_wait (tid_t child_tid UNUSED) {
-<<<<<<< HEAD
 	struct thread *curr = thread_current ();
-	struct thread *child_th = get_child_process(child_tid);
+	struct thread *child_th = get_child_with_pid(child_tid);
 
 	if (child_th == NULL)
 		return -1;
@@ -317,28 +307,6 @@ process_wait (tid_t child_tid UNUSED) {
 
 	sema_up(&child_th->free_sema);   		 // Why??
 	return exit_status;						// return 값을 레지스터에 넣어준다 (wait syscall)
-=======
-	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
-	 * XXX:       to add infinite loop here before
-	 * XXX:       implementing the process_wait. */
-	// for (int i = 0; i < 100000000; i++);
-	// return -1;
-	struct thread *cur = thread_current();
-
-	struct thread *child = get_child_with_pid(child_tid);
-
-	if (child == NULL)
-		return -1;
-
-	sema_down(&child->wait_sema);
-
-	int exit_status = child->exit_status;
-
-	list_remove(&child->child_elem);
-	sema_up(&child->free_sema); 
-	return exit_status;
-
->>>>>>> e429f9aa5690ff535de11968d1e981b72625965e
 }
 
 
@@ -347,23 +315,6 @@ process_wait (tid_t child_tid UNUSED) {
 /* Exit the process. This function is called by thread_exit (). */
 void
 process_exit (void) {
-<<<<<<< HEAD
-	struct thread *curr = thread_current ();
-
-	for (int i = 0; i < FDCOUNT_LIMIT; i++)
-		close(i);
-
-	palloc_free_multiple(curr->fdTable, FDT_PAGES);
-
-	file_close(curr->running);
-
-	// curr->exit_status = curr->status;  // ************* 이게 불필요?? **************
-	process_cleanup ();
-
-
-	sema_up(&curr->wait_sema);
-	sema_down(&curr->free_sema);
-=======
 	struct thread *cur = thread_current ();
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
@@ -386,7 +337,6 @@ process_exit (void) {
 	sema_up(&cur->wait_sema);
 	sema_down(&cur->free_sema);
 	
->>>>>>> e429f9aa5690ff535de11968d1e981b72625965e
 }
 
 /* Free the current process's resources. */
@@ -824,18 +774,6 @@ setup_stack (struct intr_frame *if_) {
 }
 #endif /* VM */
 
-struct thread *get_child_process (tid_t pid)
-{
-	struct thread *curr = thread_current ();
-	struct list_elem *child_e;
-
-	for (child_e = list_begin(&curr->child_list); list_end(&curr->child_list) != child_e; child_e = list_next(child_e))
-	{
-		struct thread *child_thread = list_entry(child_e, struct thread, child_elem);
-		if (child_thread->tid == pid)
-			return child_thread;
-	}
-
 /*                      명령어 인자 스택에 쌓음          */
 void argument_stack(char **argv, int argc, struct intr_frame *if_)
 {
@@ -882,6 +820,7 @@ void argument_stack(char **argv, int argc, struct intr_frame *if_)
 	//hex_dump(if_->rsp, rsp, USER_STACK-if_->rsp, true);
 
 }
+
 
 struct thread *get_child_with_pid(int pid)
 {

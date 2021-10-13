@@ -155,11 +155,6 @@ page_fault (struct intr_frame *f) {
 			not_present ? "not present" : "rights violation",
 			write ? "writing" : "reading",
 			user ? "user" : "kernel");
-<<<<<<< HEAD
-	// kill (f);
-	exit(-1);
-}
-=======
 
 	/* child-bad test가 rsp의 위피를 바꾸는데 page fault는 projcet 3에서 다루므로*/
 	/* 일단 exit을 통해 pass를 시킨다       */
@@ -167,4 +162,3 @@ page_fault (struct intr_frame *f) {
 	exit(-1);
 }
 
->>>>>>> e429f9aa5690ff535de11968d1e981b72625965e

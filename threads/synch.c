@@ -282,15 +282,12 @@ void lock_release(struct lock *lock)
 	ASSERT(lock != NULL);
 	ASSERT(lock_held_by_current_thread(lock));
 
-<<<<<<< HEAD
-  if (thread_mlfqs) {
-	lock->holder = NULL;
-    sema_up (&lock->semaphore);
-    return ;
-  }
-=======
-	struct thread *curr = thread_current();
->>>>>>> e429f9aa5690ff535de11968d1e981b72625965e
+	struct thread *curr = thread_current ();
+	if (thread_mlfqs) {
+		lock->holder = NULL;
+		sema_up (&lock->semaphore);
+		return ;
+	}
 
 	// 1-4 Forbid donation
 	if (!thread_mlfqs)

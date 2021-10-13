@@ -201,7 +201,6 @@ tid_t thread_create(const char *name, int priority,
 		return TID_ERROR;
 
 	/* Initialize thread. */
-<<<<<<< HEAD
 	init_thread (t, name, priority);
 
 	/* file descriptor member init */
@@ -218,34 +217,6 @@ tid_t thread_create(const char *name, int priority,
 
 
 	tid = t->tid = allocate_tid ();
-=======
-	init_thread(t, name, priority);
-
-	// 2-4 File descriptor
-	//t->fdTable = palloc_get_page(PAL_ZERO); // multi-oom : need more pages to accomodate 10 stacks of 126 opens
-	t->fdTable = palloc_get_multiple(PAL_ZERO, FDT_PAGES);
-	if (t->fdTable == NULL)
-		return TID_ERROR;
-	t->fdIdx = 2; // 0 : stdin, 1 : stdout
-	// 2-extra
-	t->fdTable[0] = 1; // dummy values to distinguish fd 0 and 1 from NULL
-	t->fdTable[1] = 2;
-	t->stdin_count = 1;
-	t->stdout_count = 1;
-
-	// 1-4 MLFQS init
-	if (thread_mlfqs)
-	{
-		t->recent_cpu = 0;
-		t->nice = 0;
-		t->priority = PRI_MAX; // priority = PRI_MAX – (recent_cpu / 4) – (nice * 2)
-	}
-	tid = t->tid = allocate_tid();
-
-	// 2-3 Parent child
-	struct thread *cur = thread_current();
-	list_push_back(&cur->child_list, &t->child_elem); // [parent] add new child to child_list
->>>>>>> e429f9aa5690ff535de11968d1e981b72625965e
 
 	/* syscall -> 부모의 child-list에 child t 추가 */
 	struct thread *curr = thread_current ();
@@ -514,21 +485,12 @@ init_thread(struct thread *t, const char *name, int priority)
 	t->waiting_lock = NULL;
 	list_init(&t->donors);
 
-<<<<<<< HEAD
 	// for syscall
 	list_init (&t->child_list);
-=======
-	// 2-3 Syscalls
-	list_init(&t->child_list);
->>>>>>> e429f9aa5690ff535de11968d1e981b72625965e
 	sema_init(&t->wait_sema, 0);
 	sema_init(&t->fork_sema, 0);
 	sema_init(&t->free_sema, 0);
 
-<<<<<<< HEAD
-=======
-	// 2-5
->>>>>>> e429f9aa5690ff535de11968d1e981b72625965e
 	t->running = NULL;
 }
 
